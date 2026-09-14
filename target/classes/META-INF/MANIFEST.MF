@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: ij-1.54d.jar
+Created-By: MiniMaven
+

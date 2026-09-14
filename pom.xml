@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+	http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.carltonlab</groupId>
+  <artifactId>cl_nuclei_classifier</artifactId>
+  <version>2.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+    <repositories>
+        <repository>
+        <id>SciJava_Public</id>
+        <url>https://maven.scijava.org/content/repositories/public/</url>
+        </repository>
+
+        <repository>
+        <id>Central</id>
+        <url>https://repo1.maven.apache.org/maven2/</url>
+        </repository>
+
+
+    </repositories>
+
+
+
+
+    <dependencies>
+
+        <!-- https://mvnrepository.com/artifact/net.imagej/ij -->
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij</artifactId>
+            <version>1.54d</version>
+        </dependency>
+
+
+    </dependencies>
+
+</project>

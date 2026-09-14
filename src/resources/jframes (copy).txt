@@ -1,0 +1,3142 @@
+package classifier_app.src.java;
+import ij.IJ;
+import ij.ImageListener;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.plugin.PlugIn;
+import ij.WindowManager;
+import ij.plugin.ZProjector;
+import ij.process.AutoThresholder.Method;
+import ij.gui.ImageWindow;
+import ij.gui.StackWindow;
+import ij.gui.Roi;
+import ij.gui.PointRoi;
+import ij.ImageListener;
+import ij.plugin.frame.RoiManager;
+import ij.gui.YesNoCancelDialog;
+
+import javax.swing.SpringLayout;
+import javax.swing.JPanel;
+import javax.swing.JLabel;
+import javax.swing.JCheckBox;
+import javax.swing.JTextField;
+import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.JFrame;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.JSlider;
+import javax.swing.DefaultBoundedRangeModel;
+import javax.swing.JComboBox;
+import javax.swing.JList;
+import javax.swing.DefaultListModel;
+import javax.swing.JScrollPane;
+import javax.swing.JOptionPane;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import java.util.Vector;
+import java.util.ArrayList;
+
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Point;
+
+import java.io.File;
+
+
+public class jframes implements PlugIn {
+
+	//declare the current image 
+	ImagePlus current_image = new ImagePlus();
+
+	//declare the projected image
+	ImagePlus projected_image = new ImagePlus();
+
+	//declaring the roi array that will hold the rois for the make sbs menu
+	ArrayList<Roi> make_sbs_roi_list = new ArrayList<Roi>();
+
+	//get the dimensions of the screen
+	Dimension screensizes = IJ.getScreenSize();
+
+	//creating the listener
+	ImageListenerFlush new_image_listener = new ImageListenerFlush();
+
+	//set up a variable to know if there is an image open
+	boolean image_opened = false;
+
+	//declaring the roi list from the make_sbs section
+	ArrayList<Roi> roi_list = new ArrayList<Roi>();
+
+	//getting the variable that holds the name of the point list in the roi manager
+	String x_y_coordinates_roi_string = new String("sbs_coordinates");
+	String x_y_coordinates_type_string = new String("Point");
+
+	//getting the width of the screen / 2
+	int JFrame_initial_width = 500;
+	//getting the height of the screen / 2
+	int JFrame_initial_height = 500;
+
+	//setting up the projection image positions
+	int projection_image_x_position = 500;
+	int projection_image_y_position = 500;
+
+	//get the number of properties per sbs roi
+	int number_of_properties_per_sbs_roi = 3;
+
+	//get the number of properties per sbs roi in a string array
+	String[] number_of_properties_per_sbs_roi_string_array = {"square", "z1", "z2"};
+
+	////////////////////Here i will show the roi properties structure 
+	//////////   "squares:true/false" 
+	//////////	 "z1:int"
+	//////////   "z2:int"
+
+	//set up a string to hold the working image path string field
+	String working_image_path = new String("/home/user/path-to-file.tif");
+
+	//declare the jframe for the main window
+    JFrame main_frame = new JFrame("Subset Classifier");
+	//declare a JFrame for the projection menu
+	JFrame projection_menu = new JFrame("Projection menu");
+	//declare the JFrame for the cut sbs menu
+	JFrame make_sbs_menu = new JFrame("SBS maker menu");
+
+	//get an array with all of the JFrames that are not the main_frame
+	JFrame[] all_jframes_except_main = {projection_menu, make_sbs_menu};
+
+	//get an error frame
+	//make a new jframe
+	JFrame error_frame = new JFrame("Error");
+
+	//declare a variable to hold the main image id
+	int main_image_id = 0;
+
+	//delcaring a variable to hold the projection image id
+	int projected_image_id = 0;
+
+	//declare a variable to hold the making sbs working image
+	int make_sbs_working_image_id = 0;
+
+    //get the content pane
+    Container contentPane = main_frame.getContentPane();
+
+	//get the content pane for the cut sbs menu
+	Container make_sbs_menu_content_pane = make_sbs_menu.getContentPane();
+
+    //set up the layout
+    SpringLayout layout = new SpringLayout();
+
+	//delcaring the buttons
+	JButton Select_button = new JButton("Select");
+	JButton Open_button = new JButton("Open");
+	JButton Save_Projection_button = new JButton("Save Projection");  
+
+	JButton make_sbs_roimanager_select_button = new JButton("Select Rois");
+	JButton make_sbs_roimanager_save_button = new JButton("Save Rois");
+	JButton make_sbs_roimanager_delete_sbs_button = new JButton("Delete SBS");
+	JButton make_sbs_roimanager_cut_selected_sbs_button = new JButton("Cut SBS");
+	JButton make_sbs_roimanager_cut_all_sbs_button = new JButton("Cut All SBS");
+	
+
+	//declaring the checkboxes
+	JCheckBox Make_Projection_checkbox = new JCheckBox("Make Projection");
+	JCheckBox Classify_checkbox = new JCheckBox("Classify SBS");
+	JCheckBox Make_sbs_checkbox = new JCheckBox("SBS Maker");
+	JCheckBox Project_all_checkbox = new JCheckBox("Project All");
+
+	JCheckBox make_sbs_roimanager_get_from_current_image_checkbox = new JCheckBox("New from current image");
+	JCheckBox Make_sbs_add_new_SBS_checkbox = new JCheckBox("Add SBS");
+	JCheckBox Make_sbs_cut_entire_z_checkbox = new JCheckBox("Cut entire Z");
+	JCheckBox Make_sbs_ask_for_zs_checkbox = new JCheckBox("Ask for Zs");
+	JCheckBox Make_sbs_use_projection_checkbox = new JCheckBox("Use projection");
+
+
+	//declaring the labels 
+	JLabel file_path_label = new JLabel("File Path: ");
+	JLabel cut_sbs_roimanager_label = new JLabel("RoiManager file");
+
+	JLabel Make_projection_save_path_label = new JLabel("Saving path: ");
+	JLabel Make_projection_type_label = new JLabel("Projection type: ");
+
+	JLabel Make_sbs_current_point_label = new JLabel("Working point: ");
+	JLabel Makes_sbs_roisize_label = new JLabel("Square ROI side:");
+	JLabel Make_sbs_cut_sbs_file_path_label = new JLabel("Saving SBS file path: ");
+
+	//declaring the JText fields
+	JTextField file_path_text_field = new JTextField(5);
+	JTextField make_sbs_roimanager_text_field = new JTextField(5);
+	JTextField Make_sbs_cut_sbs_file_path_textfield = new JTextField(5);
+
+	JTextField Make_projection_save_textfield = new JTextField(5);
+
+	//declaring the JSpinners
+	JSpinner Make_Projection_low_spinner = new JSpinner();
+	JSpinner Make_Projection_high_spinner = new JSpinner();
+
+	JSpinner Make_sbs_square_roi_size_spinner = new JSpinner();
+
+	//declaring the Jsliders
+	JSlider Make_Projection_low_slider = new JSlider();
+	JSlider Make_Projection_high_slider = new JSlider();
+
+	//declare the string for the combo box
+	String[] projection_types = {"max", "sum", "avg", "min","sd","median"};
+	//declare the JComboBox
+	JComboBox<String> Make_Projection_combobox = new JComboBox<>(projection_types);
+
+	//delcaring the Jlists
+	JList<String> Make_sbs_working_rois_list = new JList<String>();
+
+	//declaring the JScrollPane
+	JScrollPane Make_sbs_working_rois_scrollpane = new JScrollPane(Make_sbs_working_rois_list);
+		
+
+
+
+	/////////////////////////////////method to make the gui
+	//creating a class to make the gui
+	public void make_gui() {
+
+		//setting up the minimum size of the jframe
+		main_frame.setMinimumSize(new Dimension(500,100));
+		//setting up the jframe size
+		main_frame.setSize(500,100);
+
+		//get the content pane
+		contentPane = main_frame.getContentPane();
+
+		//set the layout
+		contentPane.setLayout(layout);
+
+		//add them to the content pane
+        contentPane.add(file_path_label);
+        contentPane.add(file_path_text_field);
+        contentPane.add(Select_button);
+        contentPane.add(Open_button);
+
+        contentPane.add(Classify_checkbox);
+        contentPane.add(Make_sbs_checkbox);
+		contentPane.add(Make_Projection_checkbox);
+
+		//adjust the constraints of the label
+        layout.putConstraint(SpringLayout.WEST, file_path_label, 5, SpringLayout.WEST, contentPane);
+        layout.putConstraint(SpringLayout.NORTH, file_path_label, 5, SpringLayout.NORTH, contentPane);
+        layout.putConstraint(SpringLayout.SOUTH, file_path_label, 0, SpringLayout.SOUTH, Select_button);
+    
+        //adjust the constraints of the text field
+        layout.putConstraint(SpringLayout.WEST, file_path_text_field, 5, SpringLayout.EAST, file_path_label);
+        layout.putConstraint(SpringLayout.NORTH, file_path_text_field, 5, SpringLayout.NORTH, contentPane);
+        layout.putConstraint(SpringLayout.EAST, file_path_text_field, -5, SpringLayout.WEST, Select_button);
+        layout.putConstraint(SpringLayout.SOUTH, file_path_text_field, 1, SpringLayout.SOUTH, Select_button);
+
+        //adjust the constraints of the buttons
+        //select
+        layout.putConstraint(SpringLayout.EAST, Select_button, -5, SpringLayout.WEST, Open_button);
+        layout.putConstraint(SpringLayout.NORTH, Select_button, 5, SpringLayout.NORTH, contentPane);
+        
+        //adjust the constraints of the checkboxes
+        layout.putConstraint(SpringLayout.WEST, Classify_checkbox, 5, SpringLayout.EAST, Make_Projection_checkbox);
+        layout.putConstraint(SpringLayout.NORTH, Classify_checkbox, 5, SpringLayout.SOUTH, Select_button);
+
+        layout.putConstraint(SpringLayout.WEST, Make_sbs_checkbox, 5, SpringLayout.EAST, Classify_checkbox);
+        layout.putConstraint(SpringLayout.NORTH, Make_sbs_checkbox, 5, SpringLayout.SOUTH, Select_button);
+
+        //open
+        layout.putConstraint(SpringLayout.NORTH, Open_button, 5, SpringLayout.NORTH, contentPane);
+        layout.putConstraint(SpringLayout.EAST, Open_button, -5, SpringLayout.EAST, contentPane);
+
+
+        //project
+		layout.putConstraint(SpringLayout.WEST, Make_Projection_checkbox, 5, SpringLayout.WEST, contentPane);
+		layout.putConstraint(SpringLayout.NORTH, Make_Projection_checkbox, 5, SpringLayout.SOUTH, Select_button);
+    
+		//set the dispose
+		main_frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+		//////////////////////////////////////add the listeners
+		//get the window listeners and remove them
+		WindowListener[] listeners = main_frame.getWindowListeners();
+		for (int i = 0; i < listeners.length; i++) {
+			main_frame.removeWindowListener(listeners[i]);
+		}
+
+		//add a lsitener to the jframe
+		main_frame.addWindowListener(new WindowAdapter() {
+			
+			public void windowClosing(WindowEvent e) {
+				
+				//close all windows
+				//get the titles
+				String[] titles = WindowManager.getImageTitles();
+				
+				//close all the images
+				for (int i = 0; i < titles.length; i++) {
+					ImagePlus imp = WindowManager.getImage(titles[i]);
+					if (imp != null) {
+						imp.close();
+					}
+				}
+				
+				//close all the JFrames
+				for (int i = 0; i < all_jframes_except_main.length; i++) {
+					JFrame closing_frame = all_jframes_except_main[i];
+					if (closing_frame != null) {
+						closing_frame.dispose();
+					}
+						
+				}
+				
+			}
+		});
+
+		//get and remove the listeners from the open button
+		ActionListener[] open_button_listeners = Open_button.getActionListeners();
+		for (int i = 0; i < open_button_listeners.length; i++) {
+			Open_button.removeActionListener(open_button_listeners[i]);
+		}
+		////////////////////////////////// add the listeners
+		//open image button
+		Open_button.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+
+				//remove listeners
+				remove_listeners();
+
+				//add the listener
+				ImagePlus.addImageListener(new_image_listener);
+
+				//set the flush to false
+				new_image_listener.setIgnoreFlush(false);
+
+				//getting the path
+				String opening_image_path = file_path_text_field.getText();
+				
+				//get the path into the global variable
+				working_image_path_string = opening_image_path;
+
+				//get the file (to work easy with the parents and so on)
+				File open_file = new File(opening_image_path);
+
+				//if the file exists, then proceed
+				if (open_file.exists()) {
+					
+					//get the current image
+					current_image = IJ.openImage(opening_image_path);
+					
+					//get the id
+					main_image_id = current_image.getID();
+
+					//show the image				
+					current_image.show();
+
+					//get the parent path from the opening image path
+					String working_image_parent_path = open_file.getParent();
+					
+					//set up a variable to know if an image has been previously open
+					boolean image_opened = true;
+	
+					//set the buttons on the panel to enabled
+					Make_Projection_checkbox.setEnabled(true);
+	
+					//set the checkboxes to enables
+					Make_Projection_checkbox.setEnabled(true);
+					Classify_checkbox.setEnabled(true);
+					Make_sbs_checkbox.setEnabled(true);
+	
+					//set the open image button to disables
+					Open_button.setEnabled(false);	
+					
+					//set the JTextfield to disabled
+					file_path_text_field.setEnabled(false);
+
+					//set the select button to disabled
+					Select_button.setEnabled(false);
+
+				}
+				else {
+					IJ.log("The file does not exist, try again with a valid file.");
+				}
+
+			}
+
+		});
+
+		//get and remove the listeners form the select button
+		ActionListener[] select_button_listeners = Select_button.getActionListeners();
+		for (int i = 0; i < select_button_listeners.length; i++) {
+			Select_button.removeActionListener(select_button_listeners[i]);
+		}
+
+		//add the action listeners to the buttons
+		//Select button
+		Select_button.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+
+				//create a file chooser
+				JFileChooser file_chooser = new JFileChooser();
+				
+				//set the file chooser to only accept .tif files
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("TIF files", "tif");
+				file_chooser.setFileFilter(filter);
+
+				//open the file chooser
+				int return_value = file_chooser.showOpenDialog(main_frame);
+				
+				//if the user selects a file
+				if (return_value == JFileChooser.APPROVE_OPTION) {
+					
+					//get the file
+					File selected_file = file_chooser.getSelectedFile();
+					
+					//get the file path
+					String captured_path = selected_file.getAbsolutePath();
+					
+					//set the text field to the file path
+					file_path_text_field.setText(captured_path);
+				
+				}
+			}
+		});
+
+		//get and remove the listeners from the make projection checkbox
+		ActionListener[] make_projection_checkbox_listeners = Make_Projection_checkbox.getActionListeners();
+		for (int i = 0; i < make_projection_checkbox_listeners.length; i++) {
+			Make_Projection_checkbox.removeActionListener(make_projection_checkbox_listeners[i]);
+		}
+		//make projection checkbox
+		//get the make projection checkbox listener
+		Make_Projection_checkbox.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+				
+				//if the checkbox is selected
+				if (Make_Projection_checkbox.isSelected()) {
+
+					//get the first and last slices
+					int slice_number = current_image.getNSlices();	
+
+					//make the gui
+					make_projection_gui();
+
+					//add a lsitener to the jframe
+					projection_menu.addWindowListener(new WindowAdapter() {
+						public void windowClosing(WindowEvent e) {
+
+							//close the projected image
+							if(projected_image != null){
+								//set the ignore flush to true
+								new_image_listener.setIgnoreFlush(false);
+								projected_image.close();
+							};
+							
+							//set the checkbox to fale
+							Make_Projection_checkbox.setSelected(false);
+
+						}
+					});
+
+					//get the new combo box listener
+					Make_Projection_combobox_action_listener projection_combobox_listener = new Make_Projection_combobox_action_listener();
+
+					//remove the action listeners from the combobox
+					for (ActionListener al : Make_Projection_combobox.getActionListeners()) {
+						Make_Projection_combobox.removeActionListener(al);
+					}
+
+					// add the listener to the combobox
+					Make_Projection_combobox.addActionListener(projection_combobox_listener);
+
+					//set the listener to project
+					projection_combobox_listener.make_projection(true);
+
+					///////////make the projection
+					//get the selected item
+					String selected_item_combobox = (String) Make_Projection_combobox.getSelectedItem();
+
+					//make the projection image
+					projected_image = ZProjector.run(current_image, selected_item_combobox, 1, slice_number);
+
+					//get the image id
+					projected_image_id = projected_image.getID();
+
+					//show the projected image
+					projected_image.show();
+
+					//set the location
+					projected_image.getWindow().setLocation(500,500);
+
+					//now, create the spinner model
+					SpinnerNumberModel spinner_model_low = new SpinnerNumberModel(1, 1, slice_number, 1);
+					SpinnerNumberModel spinner_model_high = new SpinnerNumberModel(slice_number, 1, slice_number, 1);
+					
+					//now set the JSpinners to the model
+					Make_Projection_low_spinner.setModel(spinner_model_low);
+					Make_Projection_high_spinner.setModel(spinner_model_high);
+
+					//make the models for the sliders
+					Make_Projection_low_slider.setMinimum(1);
+					Make_Projection_low_slider.setMaximum(slice_number);
+					Make_Projection_low_slider.setValue(1);
+					Make_Projection_low_slider.setMajorTickSpacing(1);
+					Make_Projection_low_slider.setPaintTicks(true);
+					Make_Projection_high_slider.setMinimum(1);
+					Make_Projection_high_slider.setMaximum(slice_number);
+					Make_Projection_high_slider.setValue(slice_number);
+					Make_Projection_high_slider.setMajorTickSpacing(1);
+					Make_Projection_high_slider.setPaintTicks(true);
+
+					//adding the change listeners to the spinners
+					//make the spinner low listener
+					Projection_Spinner_low_listener low_spinner_listener = new Projection_Spinner_low_listener();
+					//make the spinner high listener
+					Projection_Spinner_high_listener high_spinner_listener = new Projection_Spinner_high_listener();
+					
+					//remove the previous listeners
+					for (ChangeListener cl : Make_Projection_low_spinner.getChangeListeners()) {
+						Make_Projection_low_spinner.removeChangeListener(cl);
+					}
+					for (ChangeListener cl : Make_Projection_high_spinner.getChangeListeners()) {
+						Make_Projection_high_spinner.removeChangeListener(cl);
+					}
+					//add the low listener
+					Make_Projection_low_spinner.addChangeListener(low_spinner_listener);
+					//add the high listener
+					Make_Projection_high_spinner.addChangeListener(high_spinner_listener);
+
+					//now add the listener to the sliders
+					//mke the low listener
+					Projection_Slider_low_listener low_slider_listener = new Projection_Slider_low_listener();
+					//make the high listener
+					Projection_Slider_high_listener high_slider_listener = new Projection_Slider_high_listener();
+					//remove the previous listeners
+					for (ChangeListener cl : Make_Projection_low_slider.getChangeListeners()) {
+						Make_Projection_low_slider.removeChangeListener(cl);
+					}
+					for (ChangeListener cl : Make_Projection_high_slider.getChangeListeners()) {
+						Make_Projection_high_slider.removeChangeListener(cl);
+					}					
+					//add the low listener
+					Make_Projection_low_slider.addChangeListener(low_slider_listener);
+					//add the high listener
+					Make_Projection_high_slider.addChangeListener(high_slider_listener);
+
+					//create the new projection listener
+					Projection_Checkbox_listener projection_checkbox_listener = new Projection_Checkbox_listener(slice_number);
+					//remove previous listeners
+					for (ActionListener al : Project_all_checkbox.getActionListeners()) {
+						Project_all_checkbox.removeActionListener(al);
+					}
+					//add a listener to the checkbox
+					Project_all_checkbox.addActionListener(projection_checkbox_listener);
+
+					//enable the save projection button
+					Save_Projection_button.setEnabled(true);
+
+					//set the save path of the projection
+					set_save_path_projection();
+
+				}
+				if (!Make_Projection_checkbox.isSelected()) {
+
+					//close the projected image
+					if(projected_image != null){
+						
+						//set the ignore flush to false
+						new_image_listener.setIgnoreFlush(false);
+
+						projected_image.close();
+
+					};
+					
+					//dispose of the projection menu
+					projection_menu.dispose();
+
+					//get the combobox listener
+					Make_Projection_combobox_action_listener projection_combobox_listener = new Make_Projection_combobox_action_listener();
+					
+					//remove the action listeners from the combobox
+					for (ActionListener al : Make_Projection_combobox.getActionListeners()) {
+						Make_Projection_combobox.removeActionListener(al);
+					}
+
+					//get it into the combobox
+					Make_Projection_combobox.addActionListener(projection_combobox_listener);
+
+					//set to not project
+					projection_combobox_listener.make_projection(false);
+
+					//reset the combo box
+					Make_Projection_combobox.setSelectedIndex(0);
+
+					//set the projection to true
+					projection_combobox_listener.make_projection(true);
+
+				}
+			}
+		});
+
+		//get and remove the listeners from the Make_sbs_checkbox
+		for (ActionListener al : Make_sbs_checkbox.getActionListeners()) {
+			Make_sbs_checkbox.removeActionListener(al);
+		}
+		//add the listener to the cut checkbox
+		Make_sbs_checkbox.addActionListener(new ActionListener() {
+			
+			//add the action event
+			public void actionPerformed (ActionEvent e) {
+
+				//if the checkbox is selected
+				if (Make_sbs_checkbox.isSelected()) {
+
+					//if it is selected, then restart the roi manager
+					RoiManager roi_manager = new RoiManager();
+
+					//get the instance of the roi manager
+					roi_manager = RoiManager.getInstance();
+
+					//reset the roi manager
+					roi_manager.reset();
+
+					//set multipoint tool 
+					IJ.setTool("multipoint");
+
+					//make the cut sbs menu
+					make_make_sbs_menu_gui();
+
+					//set the text field to empty
+					make_sbs_roimanager_text_field.setText("");
+
+					//get the listeners from the checkbox and remove them
+					ActionListener[] listeners = make_sbs_roimanager_get_from_current_image_checkbox.getActionListeners();
+					for (ActionListener listener : listeners) {
+						make_sbs_roimanager_get_from_current_image_checkbox.removeActionListener(listener);
+					}
+
+					//add the listener to the cut sbs checkbox
+					make_sbs_roimanager_get_from_current_image_checkbox.addActionListener(new ActionListener() {
+						
+						public void actionPerformed (ActionEvent e) {
+
+							//reset the rois list
+							//make_sbs_roi_list = new ArrayList<Roi>();
+
+							//update the Jlist
+							//get a new default model
+							//DefaultListModel<String> loaded_list_model = new DefaultListModel<String>();
+							
+							//adding it to the JList
+							//Make_sbs_working_rois_list.setModel(loaded_list_model);
+
+							//log that a new model has started
+							IJ.log("new model started");
+							
+							//if the checkbox is selected
+							if (make_sbs_roimanager_get_from_current_image_checkbox.isSelected()) {
+								
+								//get the title of the roi manager save file
+								String main_image_to_save_path = file_path_text_field.getText();
+
+								//get the file (to work easy with the parents and so on)
+								File main_image_to_save_file = new File(main_image_to_save_path);
+
+								//get the no extension name of the file
+								String main_image_to_save_file_no_extension = main_image_to_save_file.getName().substring(0, main_image_to_save_file.getName().lastIndexOf('.'));
+
+								//get the parent
+								String main_image_to_save_parent = main_image_to_save_file.getParent();
+
+								//get the path to the roi manager save file
+								String roi_manager_save_file_path = main_image_to_save_parent + "/" + main_image_to_save_file_no_extension + "_rois.zip";
+
+								//set the text field
+								make_sbs_roimanager_text_field.setText(roi_manager_save_file_path);
+
+								//disable the load button
+								make_sbs_roimanager_select_button.setEnabled(false);	
+								
+								//Check if the file exists
+								File roi_manager_save_file = new File(roi_manager_save_file_path);
+
+								//if the file exists
+								if (roi_manager_save_file.exists()) {
+
+									//print log to say that it already exists
+									IJ.log("The roi manager save file already exists. Initiating a new one with a different filename.");
+
+									//getting the date and time as strings
+									DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+
+									//get the current date and time
+									LocalDateTime now = LocalDateTime.now();
+
+									//get the date and time as a string
+									String date_and_time = dtf.format(now);
+									
+									//after getting the date and time, add it to the path
+									roi_manager_save_file_path = main_image_to_save_parent + "/" + main_image_to_save_file_no_extension + "_date_and_time_" + date_and_time + "_rois.zip";
+
+									//update the text field
+									make_sbs_roimanager_text_field.setText(roi_manager_save_file_path);
+									
+								}
+
+								//get the make sbs working image id
+								//get the use projection checkbox state
+								boolean use_projection = Make_sbs_use_projection_checkbox.isSelected();
+
+								//log the use projection state
+								IJ.log("use projection state: " + use_projection);
+
+								//if it is not selected, get the current image id
+								if (!use_projection) {
+
+									//get the current image id
+									int make_sbs_working_image_id = main_image_id;
+
+								}
+								//if it is selected, set the working image id to the projection
+								else {
+
+									//find out if the projected image exists
+									boolean projection_exists = WindowManager.getImage(projected_image_id) != null;
+
+									//if the projection exists, get the id
+									if (projection_exists) {
+
+										//get the current image id
+										int make_sbs_working_image_id = projected_image_id;
+
+									}
+
+									else {
+
+										//start the error method
+										make_error_window("The projection image does not exist. Please make a projection first.");
+										
+										//deselect the add new 
+										make_sbs_roimanager_get_from_current_image_checkbox.setSelected(false);
+
+									}
+
+								}
+								
+
+								//reset the roi list
+								//make_sbs_prepare_rois_and_listeners();
+
+								//get the image canvas from the main image
+								//ImageCanvas main_image_canvas = main_image.getCanvas();
+	
+
+							}
+
+							//if the checkbox is not selected
+							if (!make_sbs_roimanager_get_from_current_image_checkbox.isSelected()) {
+
+								//set the text field
+								make_sbs_roimanager_text_field.setText("");
+
+								//enable the load button
+								make_sbs_roimanager_select_button.setEnabled(true);
+
+							}
+
+							
+						}
+
+
+					});
+										
+					//set the checkbox to selected
+					make_sbs_roimanager_get_from_current_image_checkbox.setSelected(false);
+
+					//remove action listeners from the load button
+					for (ActionListener al : make_sbs_roimanager_select_button.getActionListeners()) {
+						make_sbs_roimanager_select_button.removeActionListener(al);
+					}
+
+					//add the listener to the load button
+					make_sbs_roimanager_select_button.addActionListener(new ActionListener() {
+						
+						public void actionPerformed (ActionEvent e) {
+
+							//if it is selected, then restart the roi manager
+							RoiManager roi_manager = new RoiManager();
+
+							//get the isntance of the roi manager
+							roi_manager = RoiManager.getInstance();
+
+							//reset the roi manager
+							roi_manager.reset();
+
+							//create a file chooser
+							JFileChooser file_chooser = new JFileChooser();
+
+							//open the file chooser
+							int return_value = file_chooser.showOpenDialog(make_sbs_menu);
+							
+							//if the user selects a file
+							if (return_value == JFileChooser.APPROVE_OPTION) {
+								
+								//get the file
+								File selected_file = file_chooser.getSelectedFile();
+								
+								//get the file path
+								String captured_path = selected_file.getAbsolutePath();
+								
+								//find out if the capture path is .zip
+								String captured_path_extension = captured_path.substring(captured_path.lastIndexOf('.') + 1, captured_path.length());
+
+								//if the extension is not zip then replace the extension with zip
+								if (!captured_path_extension.equals("zip")) {
+									
+									//replace the extension with zip
+									captured_path = captured_path.substring(0, captured_path.lastIndexOf('.')) + "_rois.zip";
+									
+								}
+
+								//set the text field to the file path
+								make_sbs_roimanager_text_field.setText(captured_path);
+
+								//load the roi manager
+								boolean roimanager_file_exists = make_sbs_load_roi_manager();
+
+								//if the file was loaded, then validate it
+								if (roimanager_file_exists) {
+
+									//validate the roi manager
+									boolean roi_coordinate_validation = make_sbs_validate_roi_manager();
+
+									//print the validation
+									IJ.log("Roi manager validation: " + roi_coordinate_validation);
+
+									//if the validation is correct, then get the coordinates
+									if (roi_coordinate_validation) {
+
+										//load the roi manager data into the roi_list
+										//loop through the roi manager
+										for (int i = 0; i < roi_manager.getCount(); i++) {
+
+											//get the roi from the roi manager
+											Roi roi = roi_manager.getRoi(i);
+
+											//add the roi to the roi list
+											roi_list.add(roi);
+
+										}
+
+										//update the jlist
+										Make_sbs_update_jlist();
+
+										//hide the roi manager
+										roi_manager.setVisible(true);
+
+									}
+									
+									//if it is not validated, get an error window with the error message
+									else {
+										
+										//get the error message
+										String error_message = "The roi manager file is not valid. Please check the file and try again or make a new file.";
+										
+										//get the error window
+										make_error_window(error_message);
+
+										//reset the roi manager
+										roi_manager.reset();
+
+										//reset the text field
+										make_sbs_roimanager_text_field.setText("");
+										
+									}
+
+									
+								}
+								
+							
+							}
+
+						}
+
+					});
+
+				}
+
+				//if the checkbox is not selected
+				if (!Make_sbs_checkbox.isSelected()) {
+
+					//close the frame
+					make_sbs_menu.dispose();
+
+				}
+
+			}
+
+		});
+		
+
+
+        //display
+        main_frame.pack();
+        main_frame.setVisible(true);
+
+	}
+	
+	//create a make projection menu gui
+	public void make_projection_gui() {
+		
+		//set the minimum size
+		projection_menu.setMinimumSize(new Dimension(300,300));
+
+		//set the jfame size
+		projection_menu.setSize(new Dimension(300,300));
+		
+		//declare a container
+		Container projection_menu_content_pane = projection_menu.getContentPane();
+
+		//set the layout
+		SpringLayout projection_menu_layout = new SpringLayout();
+
+		//set the container layout
+		projection_menu_content_pane.setLayout(projection_menu_layout);
+
+		//add the checkbox
+		projection_menu_content_pane.add(Project_all_checkbox);
+
+		//add the two Jspinners
+		projection_menu_content_pane.add(Make_Projection_low_spinner);
+		projection_menu_content_pane.add(Make_Projection_high_spinner);	
+
+		//add the two sliders
+		projection_menu_content_pane.add(Make_Projection_low_slider);
+		projection_menu_content_pane.add(Make_Projection_high_slider);
+
+		//add the JComboBox
+		projection_menu_content_pane.add(Make_Projection_combobox);
+
+		//add the JButtons
+		//the save projection button
+		projection_menu_content_pane.add(Save_Projection_button);
+
+		//add the text fields
+		//the save projection text field
+		projection_menu_content_pane.add(Make_projection_save_textfield);
+
+		//add the Jlabels
+		//the save projection label
+		projection_menu_content_pane.add(Make_projection_save_path_label);
+		//the type label
+		projection_menu_content_pane.add(Make_projection_type_label);
+
+		//set the layout constraints
+		//for the checkbox
+		projection_menu_layout.putConstraint(SpringLayout.WEST, 
+											Project_all_checkbox,
+											5, 
+											SpringLayout.WEST, 
+											projection_menu_content_pane);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Project_all_checkbox,
+											5,
+											SpringLayout.NORTH,
+											projection_menu_content_pane);
+		//for the low spiner and slider
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_Projection_low_spinner,
+											5,
+											SpringLayout.WEST,
+											projection_menu_content_pane);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_Projection_low_spinner,
+											5,
+											SpringLayout.SOUTH,
+											Project_all_checkbox);
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_Projection_low_slider,
+											5,
+											SpringLayout.EAST,
+											Make_Projection_low_spinner);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_Projection_low_slider,
+											5,
+											SpringLayout.SOUTH,
+											Project_all_checkbox);
+		projection_menu_layout.putConstraint(SpringLayout.EAST,
+											Make_Projection_low_slider,
+											-5,
+											SpringLayout.WEST,
+											Make_Projection_high_spinner);
+
+		//for the high spiner and slider
+		projection_menu_layout.putConstraint(SpringLayout.EAST,
+											Make_Projection_high_spinner,
+											-5,
+											SpringLayout.EAST,
+											projection_menu_content_pane);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_Projection_high_spinner,
+											5,
+											SpringLayout.SOUTH,
+											Make_Projection_low_slider);	
+		projection_menu_layout.putConstraint(SpringLayout.EAST,
+											Make_Projection_high_slider,
+											5,
+											SpringLayout.EAST,
+											Make_Projection_low_slider);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_Projection_high_slider,
+											5,
+											SpringLayout.SOUTH,
+											Make_Projection_low_slider);
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_Projection_high_slider,
+											5,
+											SpringLayout.EAST,
+											Make_Projection_low_spinner);
+		
+		//set the combobox
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_Projection_combobox,
+											5,
+											SpringLayout.EAST,
+											Make_projection_type_label);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_Projection_combobox,
+											5,
+											SpringLayout.SOUTH,
+											Make_Projection_high_slider);
+		projection_menu_layout.putConstraint(SpringLayout.EAST,
+											Make_Projection_combobox,
+											-5,
+											SpringLayout.EAST,
+											projection_menu_content_pane);
+		
+		/////////////////////////////////for the JTextFields
+		//for the save projection text field
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_projection_save_textfield,
+											5,
+											SpringLayout.EAST,
+											Make_projection_save_path_label);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_projection_save_textfield,
+											5,
+											SpringLayout.SOUTH,
+											Make_Projection_combobox);
+		projection_menu_layout.putConstraint(SpringLayout.EAST,
+											Make_projection_save_textfield,
+											-5,
+											SpringLayout.EAST,
+											projection_menu_content_pane);
+
+		//////////////////////////////////for the JButtons
+		//for the save projection button
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Save_Projection_button,
+											5,
+											SpringLayout.WEST,
+											projection_menu_content_pane);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Save_Projection_button,
+											5,
+											SpringLayout.SOUTH,
+											Make_projection_save_textfield);
+		projection_menu_layout.putConstraint(SpringLayout.EAST,
+											Save_Projection_button,
+											-5,
+											SpringLayout.EAST,
+											projection_menu_content_pane);
+
+		//////////////////////////////////for the Jlabels
+		//for the save projection label
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_projection_save_path_label,
+											5,
+											SpringLayout.WEST,
+											projection_menu_content_pane);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_projection_save_path_label,
+											5,
+											SpringLayout.SOUTH,
+											Make_Projection_combobox);
+		//for the type label
+		projection_menu_layout.putConstraint(SpringLayout.WEST,
+											Make_projection_type_label,
+											5,
+											SpringLayout.WEST,
+											projection_menu_content_pane);
+		projection_menu_layout.putConstraint(SpringLayout.NORTH,
+											Make_projection_type_label,
+											5,
+											SpringLayout.SOUTH,
+											Make_Projection_high_slider);
+		projection_menu_layout.putConstraint(SpringLayout.SOUTH,
+											Make_projection_type_label,
+											0,
+											SpringLayout.SOUTH,
+											Make_Projection_combobox);
+
+		//////////////////////////////add liustener to component combobox
+		//get the listener for the combobox
+		Make_Projection_combobox_action_listener combobox_action_listener = new Make_Projection_combobox_action_listener();
+
+		//set the make projection to true
+		combobox_action_listener.make_projection(true);
+
+		//set the save path
+		set_save_path_projection();
+
+		//set the dispose
+		projection_menu.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		
+		/////////////////////////////////// add the listeners
+		//Save projection button
+		Save_Projection_button.addActionListener(new ActionListener() {
+	
+			public void actionPerformed(ActionEvent e) {
+
+				//get the save path
+				String saving_image_path = Make_projection_save_textfield.getText();
+
+				//get the file
+				File saving_file = new File(saving_image_path);
+
+				//if the file exists
+				if(saving_file.exists()) {
+
+					//ask if the user wants to overwrite
+					int overwrite = JOptionPane.showConfirmDialog(projection_menu, "The file already exists. Do you want to overwrite it?", "Overwrite?", JOptionPane.YES_NO_OPTION);
+
+					//if the user does not want to overwrite
+					if(overwrite == JOptionPane.NO_OPTION) {
+
+						//return
+						return;
+
+					}
+
+					//if the user wants to overwrite
+					else {
+
+						//delete the file
+						saving_file.delete();
+
+						//save the image
+						IJ.saveAs(projected_image, "Tiff", saving_image_path);
+
+					}
+
+				}
+
+				//if the file doesn't exist
+				else {
+
+					//save the image
+					IJ.saveAs(projected_image, "Tiff", saving_image_path);
+
+				}
+		
+
+			}
+
+		});
+
+		//pack
+		projection_menu.pack();
+		projection_menu.setVisible(true);
+
+	}
+
+	//create a cut sbs menu gui
+	public void make_make_sbs_menu_gui() {
+
+		//set the minimum size
+		make_sbs_menu.setMinimumSize(new Dimension(500,300));
+
+		//set the jfame size
+		make_sbs_menu.setSize(new Dimension(700,300));
+
+		//declare the new layout
+		SpringLayout make_sbs_menu_layout = new SpringLayout();
+
+		//set the content pane layout
+		make_sbs_menu_content_pane.setLayout(make_sbs_menu_layout);
+
+		//add the label
+		make_sbs_menu_content_pane.add(cut_sbs_roimanager_label);
+		make_sbs_menu_content_pane.add(Makes_sbs_roisize_label);
+		make_sbs_menu_content_pane.add(Make_sbs_cut_sbs_file_path_label);
+
+		//add the JTextField
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_text_field);
+		make_sbs_menu_content_pane.add(Make_sbs_cut_sbs_file_path_textfield);
+
+		//add the JButtons
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_select_button);
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_save_button);
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_delete_sbs_button);
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_cut_selected_sbs_button);
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_cut_all_sbs_button);
+
+		//add the checkbox
+		make_sbs_menu_content_pane.add(make_sbs_roimanager_get_from_current_image_checkbox);
+		make_sbs_menu_content_pane.add(Make_sbs_add_new_SBS_checkbox);
+		make_sbs_menu_content_pane.add(Make_sbs_cut_entire_z_checkbox);
+		make_sbs_menu_content_pane.add(Make_sbs_ask_for_zs_checkbox);
+		make_sbs_menu_content_pane.add(Make_sbs_use_projection_checkbox);
+
+
+		//adding the JList
+		//make_sbs_menu_content_pane.add(Make_sbs_working_rois_list);
+
+		//adding the JSpinner
+		make_sbs_menu_content_pane.add(Make_sbs_square_roi_size_spinner);
+
+		//adding the scrollpane
+		make_sbs_menu_content_pane.add(Make_sbs_working_rois_scrollpane);
+
+		//get the current image
+		ImagePlus imp = WindowManager.getCurrentImage();
+	
+		//get the image size
+		int image_width = imp.getWidth();
+		int image_height = imp.getHeight();
+
+		//get the max of those two
+		int max = Math.max(image_width, image_height);
+
+		//get a new model for the spinner
+		SpinnerNumberModel roi_size_model = new SpinnerNumberModel(100, 1, max, 1);
+
+		//add the spinner model
+		Make_sbs_square_roi_size_spinner.setModel(roi_size_model);
+
+		//set the ask for zs to false
+		Make_sbs_ask_for_zs_checkbox.setSelected(false);
+
+		//set the enabled to false
+		Make_sbs_ask_for_zs_checkbox.setEnabled(false);
+
+		//add the layout constraints
+		//for the label
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										cut_sbs_roimanager_label,
+										5,
+										SpringLayout.WEST,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										cut_sbs_roimanager_label,
+										5,
+										SpringLayout.NORTH,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										cut_sbs_roimanager_label,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_text_field);
+		//now for the label of the defualt size
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Makes_sbs_roisize_label,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										Makes_sbs_roisize_label,
+										5,
+										SpringLayout.SOUTH,
+										Make_sbs_add_new_SBS_checkbox);
+		//for the cut sbs file path label
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_cut_sbs_file_path_label,
+										5,
+										SpringLayout.WEST,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										Make_sbs_cut_sbs_file_path_label,
+										-5,
+										SpringLayout.SOUTH,
+										make_sbs_menu_content_pane);
+		/////////text fields
+		//for the text field
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_text_field,
+										5,
+										SpringLayout.EAST,
+										cut_sbs_roimanager_label);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_text_field,
+										5,
+										SpringLayout.NORTH,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										make_sbs_roimanager_text_field,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+		//for the text field of the cut path
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_cut_sbs_file_path_textfield,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_cut_sbs_file_path_label);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										Make_sbs_cut_sbs_file_path_textfield,
+										-5,
+										SpringLayout.SOUTH,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										Make_sbs_cut_sbs_file_path_textfield,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+	
+
+		//for the checkbox
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_get_from_current_image_checkbox,
+										5,
+										SpringLayout.WEST,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_get_from_current_image_checkbox,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_text_field);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										make_sbs_roimanager_get_from_current_image_checkbox,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_select_button);
+		
+		//for the load button
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_select_button,
+										5,
+										SpringLayout.EAST,
+										make_sbs_roimanager_get_from_current_image_checkbox);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_select_button,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_text_field);
+		//for the save button
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_save_button,
+										5,
+										SpringLayout.EAST,
+										make_sbs_roimanager_select_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_save_button,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_text_field);
+		//for the delete sbs button
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_delete_sbs_button,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_delete_sbs_button,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_cut_all_sbs_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										make_sbs_roimanager_delete_sbs_button,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+		//for the current selected cut button
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_cut_selected_sbs_button,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_cut_selected_sbs_button,
+										5,
+										SpringLayout.SOUTH,
+										Make_sbs_cut_entire_z_checkbox);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										make_sbs_roimanager_cut_selected_sbs_button,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+		//for the cut all button
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										make_sbs_roimanager_cut_all_sbs_button,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										make_sbs_roimanager_cut_all_sbs_button,
+										5,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_cut_selected_sbs_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										make_sbs_roimanager_cut_all_sbs_button,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+
+		//for the JScroll pane
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_working_rois_scrollpane,
+										5,
+										SpringLayout.WEST,
+										make_sbs_menu_content_pane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										Make_sbs_working_rois_scrollpane,
+										20,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_save_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane,
+										0,
+										SpringLayout.EAST,
+										make_sbs_roimanager_select_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										Make_sbs_working_rois_scrollpane,
+										-5,
+										SpringLayout.NORTH,
+										Make_sbs_cut_sbs_file_path_textfield);
+		//////////////checkboxes
+		//for the checkbox
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_add_new_SBS_checkbox,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										Make_sbs_add_new_SBS_checkbox,
+										0,
+										SpringLayout.NORTH,
+										Make_sbs_working_rois_scrollpane);
+		//for the cut entire checkbox
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_cut_entire_z_checkbox,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_working_rois_scrollpane);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										Make_sbs_cut_entire_z_checkbox,
+										5,
+										SpringLayout.SOUTH,
+										Make_sbs_square_roi_size_spinner);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										Make_sbs_cut_entire_z_checkbox,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+		//for the get zs checkbox
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_ask_for_zs_checkbox,
+										5,
+										SpringLayout.EAST,
+										Make_sbs_add_new_SBS_checkbox);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										Make_sbs_ask_for_zs_checkbox,
+										0,
+										SpringLayout.NORTH,
+										Make_sbs_add_new_SBS_checkbox);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										Make_sbs_ask_for_zs_checkbox,
+										0,
+										SpringLayout.SOUTH,
+										Make_sbs_add_new_SBS_checkbox);
+		// for the use projection checkbox
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_use_projection_checkbox,
+										5,
+										SpringLayout.EAST,
+										make_sbs_roimanager_save_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,
+										Make_sbs_use_projection_checkbox,
+										0,
+										SpringLayout.NORTH,
+										make_sbs_roimanager_save_button);
+		make_sbs_menu_layout.putConstraint(SpringLayout.SOUTH,
+										Make_sbs_use_projection_checkbox,
+										0,
+										SpringLayout.SOUTH,
+										make_sbs_roimanager_save_button);
+
+		//set the spinner position
+		make_sbs_menu_layout.putConstraint(SpringLayout.WEST,
+										Make_sbs_square_roi_size_spinner,
+										5,
+										SpringLayout.EAST,
+										Makes_sbs_roisize_label);
+		make_sbs_menu_layout.putConstraint(SpringLayout.NORTH,	
+										Make_sbs_square_roi_size_spinner,
+										5,
+										SpringLayout.SOUTH,
+										Make_sbs_add_new_SBS_checkbox);
+		make_sbs_menu_layout.putConstraint(SpringLayout.EAST,
+										Make_sbs_square_roi_size_spinner,
+										-5,
+										SpringLayout.EAST,
+										make_sbs_menu_content_pane);
+
+
+		//add and remove the make_sbs_menu listners
+		//get the listeners
+		WindowListener[] make_sbs_menu_listeners = make_sbs_menu.getWindowListeners();
+		//remove the listeners
+		for (int i = 0; i < make_sbs_menu_listeners.length; i++) {
+			make_sbs_menu.removeWindowListener(make_sbs_menu_listeners[i]);
+		}
+		/////////////////////////////////////listeners
+		//add an action listener to the frame
+		make_sbs_menu.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				//if the frame is closed, then unselect the checkbox
+				Make_sbs_checkbox.setSelected(false);
+				//also, set the Make_sbs_add_new
+				Make_sbs_add_new_SBS_checkbox.setSelected(false);
+				//also reset the Jlist
+				//get a new list model
+				DefaultListModel reset_list_model = new DefaultListModel();
+				//set the list model
+				Make_sbs_working_rois_list.setModel(reset_list_model);
+				//reset the rois list
+				roi_list = new ArrayList<Roi>();
+
+			}
+		});
+		
+
+		//get the listeners for the Make_sbs_add_new_SBS_checkbox
+		ActionListener[] Make_sbs_add_new_SBS_checkbox_listeners = Make_sbs_add_new_SBS_checkbox.getActionListeners();
+		//remove the listeners
+		for (int i = 0; i < Make_sbs_add_new_SBS_checkbox_listeners.length; i++) {
+			Make_sbs_add_new_SBS_checkbox.removeActionListener(Make_sbs_add_new_SBS_checkbox_listeners[i]);
+		}
+		//for the add new sbs checkbox
+		Make_sbs_add_new_SBS_checkbox.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+			
+				//if the checkbox is selected, set the variable to true
+				if (Make_sbs_add_new_SBS_checkbox.isSelected()) {
+					
+					//set the ask for zs checkbox to enabled
+					Make_sbs_ask_for_zs_checkbox.setEnabled(true);
+
+				}
+				//if the checkbox is not selected, set the variable to false
+				else {
+
+					//set the ask for zs checkbox to disabled
+					Make_sbs_ask_for_zs_checkbox.setEnabled(false);
+
+					//set the ask for zs checkbox to false
+					Make_sbs_ask_for_zs_checkbox.setSelected(false);
+				
+				}
+			}
+		});
+
+		//set the dispose
+		make_sbs_menu.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+		//pack
+		make_sbs_menu.pack();
+		make_sbs_menu.setVisible(true);
+
+	}
+
+	//making the load roi manager method
+	public boolean make_sbs_load_roi_manager() {
+
+		//set the variable of answer
+		boolean roi_manager_loaded = false;
+
+		//first, reset the roi manager
+		RoiManager roi_manager = RoiManager.getInstance();
+		roi_manager.reset();
+
+		//first, get the path from the text field
+		String roi_manager_path = make_sbs_roimanager_text_field.getText();
+
+		//find out if the file exists
+		File roi_manager_file = new File(roi_manager_path);
+
+		//if the file exists, load it
+		if (roi_manager_file.exists()) {
+
+			//open the file
+			roi_manager.runCommand("Open", roi_manager_path);
+
+			//set the roi manager loaded flag to true
+			roi_manager_loaded = true;
+
+		} else {
+
+			//if the file doesn't exist, tell the user
+			IJ.showMessage("The roi manager you selected doesn't exist");
+			//print that a new one will be initiated
+			IJ.log("A new roi manager will be initiated");
+
+			//sett he flag to false
+			roi_manager_loaded = false;
+
+		}
+
+		//return the flag
+		return roi_manager_loaded;
+
+	}
+
+	//validate the roi manager
+	public boolean make_sbs_validate_roi_manager() {
+
+		//get the roi manager count
+		RoiManager roi_manager = RoiManager.getInstance();
+		
+		//get the number of rois
+		int roi_manager_count = roi_manager.getCount();
+
+		//make a boolean to return
+		boolean roi_manager_valid = false;
+
+		//get the return type
+		//ArrayList<float[]> roi_coordinates = new ArrayList<float[]>();
+
+		//if the roi manager count is more than 0, then get the first roi 
+		//and get the roi type
+		if (roi_manager_count > 1) {
+
+			//get the title of the first roi
+			String first_roi_title = roi_manager.getRoi(0).getName();
+
+			//get the roitype of the first roi
+			int first_roi_type = roi_manager.getRoi(0).getType();
+
+			//if it is of type point
+			if (first_roi_type == Roi.POINT) {
+				
+				//compare it to the sbs_coordinates string
+				if (first_roi_title.equals("sbs_coordinates")) {
+
+					//if it's the same, then it's a valid roi manager
+					roi_manager_valid = true;
+
+				} else {
+
+					//if it's not the same, then it's not a valid roi manager
+					roi_manager_valid = false;
+
+				}
+
+		 	} 			
+					
+		} 
+		
+		//if the roi manager is 1 or less, then return false
+		if (roi_manager_count <= 1) {
+			
+			roi_manager_valid = false;
+			
+		}
+
+		return roi_manager_valid;
+
+
+	}
+
+	//get the coordinates from the roi manager
+	public ArrayList<float[]> make_sbs_get_roi_coordinates() {
+
+		//get the roi manager instance
+		RoiManager roi_manager = RoiManager.getInstance();
+
+		//get the coordinates from the first roi
+		float[] roi_x_coordinates = roi_manager.getRoi(0).getFloatPolygon().xpoints;
+		float[] roi_y_coordinates = roi_manager.getRoi(0).getFloatPolygon().ypoints;
+
+		//get the array list with x and y coordinates
+		ArrayList<float[]> roi_coordinates = new ArrayList<float[]>();
+		roi_coordinates.add(roi_x_coordinates);
+		roi_coordinates.add(roi_y_coordinates);
+
+		//retunr the array list
+		return roi_coordinates;
+
+	}
+
+	//making the class to populate the make sbs jlist
+	public DefaultListModel make_sbs_populate_jlist(ArrayList<Roi> roi_list) {
+
+		//making a new DefaultListModel
+		DefaultListModel roi_list_model = new DefaultListModel();
+
+		//looping through the roi list to get the roi names
+		for (int i = 0; i < roi_list.size(); i++) {
+
+			//get the roi name
+			String roi_name = roi_list.get(i).getName();
+
+			//add the roi name to the model
+			roi_list_model.addElement(roi_name);
+
+		}
+
+		//returning the model
+		return roi_list_model;
+
+	}
+
+	//creating flags to know if the gui have already been created... don't want to
+	//figure out how to do this without this xD I'm 100% sure there is a better way
+	//but I'm not sure how to do it
+	boolean make_gui_created = false;
+	boolean make_projection_gui_created = false;
+	boolean make_sbs_menu_created = false;
+	
+
+	//setup a string to store the working image path even after you change the jtextbox
+	String default_working_image_path_string = new String("/home/user/path-to-file.tif");
+	String working_image_path_string = new String("/home/user/path-to-file.tif");
+
+
+	//set up a string to hold the working image parent path
+	String working_image_parent_path = new String("/home/user/");
+
+	//setting up a variable to hold the projected image title
+	String projected_image_title = new String("projection.tif"); 
+
+	//get a new class to hold the image listeners
+	public class ImageListenerFlush implements ImageListener {
+
+		private boolean ignore_flush = false;
+
+		public void setIgnoreFlush(boolean ignore_flush) {
+			this.ignore_flush = ignore_flush;
+		}
+
+		public void imageOpened(ImagePlus imp) {
+			IJ.log("imageOpened: " + imp.getTitle());
+		}
+
+		public void imageClosed(ImagePlus imp) {
+			
+			if (ignore_flush) {
+				return;
+			}
+			if (!ignore_flush) {
+				
+				//get the image id
+				int image_id = imp.getID();
+
+				//if the title is the same as the projected image
+				if(image_id == projected_image_id){
+
+					//enable the make projection button
+					Make_Projection_checkbox.setSelected(false);
+
+					//print that you closed the image
+					IJ.log("You have closed the projected image");
+
+					//dispose of the JFrame 
+					projection_menu.dispose();		
+
+				};
+		
+				//if the title is the same as the main image
+				if(image_id == main_image_id){
+					
+					IJ.log("You have closed the main image");
+					//set the open image button to enables
+					Open_button.setEnabled(true);
+					//set the make projection button to disabled
+					Make_Projection_checkbox.setEnabled(false);
+					//deselect it
+					Make_Projection_checkbox.setSelected(false);
+					//set the save projection button to disabled
+					Save_Projection_button.setEnabled(false);
+					//set the cut sbs checkbox to disabled
+					Make_sbs_checkbox.setEnabled(false);
+					//deselect it
+					Make_sbs_checkbox.setSelected(false);
+					//set the classify sbs checkbox to disabled
+					Classify_checkbox.setEnabled(false);
+					//deselect it
+					Classify_checkbox.setSelected(false);
+					//set the text field to the default
+					file_path_text_field.setText(default_working_image_path_string);
+					image_opened = false;
+
+					//set the text field to enabled
+					file_path_text_field.setEnabled(true);
+
+					//set the select file button to enabled
+					Select_button.setEnabled(true);
+
+					//close all the JFrames
+					for (int i = 0; i < all_jframes_except_main.length; i++) {
+						JFrame closing_frame = all_jframes_except_main[i];
+						if (closing_frame != null) {
+							closing_frame.dispose();
+						}
+							
+					}
+				
+				};
+				
+			}
+
+			
+		}
+
+			
+		public void imageUpdated(ImagePlus imp) {
+			return;
+		}
+
+
+
+
+	}
+
+	//make a class to hold roi properties for this implementation of making sbs
+	public class SBS_ROI_Properties {
+
+		//set a square present flag
+		private boolean square_present = false;
+
+		//set a z1 position integer
+		private int z1_position = 0;
+
+		//set a z2 position integer
+		private int z2_position = 0;
+
+		//set up a new list to hold the bool and int values
+		private ArrayList<Object> roi_properties = new ArrayList<Object>();
+
+		//now get a method to get a property array and transform it into the variables
+		public void read_roi_properties(String[] roi_properties) {
+			
+			//split a string after a specific character
+			String[] split_square_string = roi_properties[0].split(":");
+
+			//cast the second string to an integer
+			this.square_present = Boolean.parseBoolean(split_square_string[1]);
+			this.roi_properties.add(square_present);
+
+			//split a string after a specific character
+			String[] split_z1 = roi_properties[1].split(":");
+
+			//cast the second string to an integer
+			this.z1_position = Integer.parseInt(split_z1[1]);
+			this.roi_properties.add(z1_position);
+
+
+			//split a string after a specific character
+			String[] split_z2 = roi_properties[2].split(":");
+
+			//cast the second string to an integer
+			this.z2_position = Integer.parseInt(split_z2[1]);
+			this.roi_properties.add(z2_position);
+
+		}
+
+		//make the getters and setters for variables square_present, z1_position, z2_position
+		public boolean isSquare_present() {
+			return square_present;
+		}
+
+		public void setSquare_present(boolean square_present) {
+			this.square_present = square_present;
+		}
+
+		public int getZ1_position() {
+			return z1_position;
+		}
+
+		public void setZ1_position(int z1_position) {
+			this.z1_position = z1_position;
+		}
+
+		public int getZ2_position() {
+			return z2_position;
+		}
+
+		public void setZ2_position(int z2_position) {
+			this.z2_position = z2_position;
+		}
+
+		public Object getProperty(int index) {
+
+			return this.roi_properties.get(index);
+
+		}
+
+
+	}
+
+	////////////////////////method to remove listeners
+	//class to remove listeners
+	public void remove_listeners() {
+
+		ImagePlus imp = new ImagePlus();
+		
+		Vector listeners = ImagePlus.getListeners();
+		
+		//get the size of the listeners
+		int listen_size = listeners.size();
+		
+		if(listen_size > 0){
+			
+			IJ.log("The size of the listeners is: " + listen_size);
+		
+			for (int i = 0; i < listen_size; i++) {
+		
+				ImageListener current_listen = (ImageListener) listeners.get(i);
+		
+				ImagePlus.removeImageListener(current_listen);
+		
+			}
+			
+		};
+		
+	}
+
+	//////////////////////// make an action listener for the checkbox
+	public class Projection_Checkbox_listener implements ActionListener {
+
+		private int slicesNumber;
+
+		public Projection_Checkbox_listener(int slicesNumber) {
+			this.slicesNumber = slicesNumber;
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			
+			//get the source
+			Object source = e.getSource();
+			
+			//if the source is the project all checkbox
+			if(source == Project_all_checkbox){
+			
+				//if the checkbox is selected
+				if(Project_all_checkbox.isSelected()){
+			
+					//set the max projection slider to the max value
+					Make_Projection_high_slider.setValue(slicesNumber);
+			
+					//set the max projection spinner to the max value
+					Make_Projection_high_spinner.setValue(slicesNumber);
+			
+					//disable the slider
+					Make_Projection_high_slider.setEnabled(false);
+			
+					//disable the spinner
+					Make_Projection_high_spinner.setEnabled(false);
+			
+					//set the min projection slider to the min value
+					Make_Projection_low_slider.setValue(1);
+			
+					//set the min projection spinner to the min value
+					Make_Projection_low_spinner.setValue(1);
+			
+					//disable the min projection slider
+					Make_Projection_low_slider.setEnabled(false);
+			
+					//disable the min projection spinner
+					Make_Projection_low_spinner.setEnabled(false);
+											
+					//get the window
+					ImageWindow projected_image_window = projected_image.getWindow();
+
+					//get the selected item
+					String combobox_selected_item = (String) Make_Projection_combobox.getSelectedItem();
+					
+					
+
+					//if the projected image exists
+					if(projected_image != null){
+					
+						//set the ignore flush to true
+						new_image_listener.setIgnoreFlush(true);
+					
+						//close the projected image
+						projected_image.close();
+					
+						new_image_listener.setIgnoreFlush(false);
+
+					}
+
+					//make the projection image
+					projected_image = ZProjector.run(current_image, combobox_selected_item);
+				
+					//get the image id
+					projected_image_id = projected_image.getID();
+				
+					//show the projected image
+					projected_image.show();
+				
+					//set the location
+					projected_image.getWindow().setLocation(500,500);
+					
+					//print the ij log
+					IJ.log("You have projected all the slices");
+
+					//set the save path of the projection
+					set_save_path_projection();
+
+				}else{
+					//enable the slider
+					Make_Projection_high_slider.setEnabled(true);
+					//enable the spinner
+					Make_Projection_high_spinner.setEnabled(true);
+					//enable the min projection slider
+					Make_Projection_low_slider.setEnabled(true);
+					//enable the min projection spinner
+					Make_Projection_low_spinner.setEnabled(true);
+					//set the save path of the projection
+					set_save_path_projection();
+				};
+			};
+		};
+
+
+	}
+
+	//////////////////////// make an action listener for the sliders
+	public class Projection_Slider_high_listener implements ChangeListener {
+
+		public void stateChanged(ChangeEvent e) {
+			
+			//get the source
+			JSlider this_slider = (JSlider) e.getSource();
+
+			if(!this_slider.getValueIsAdjusting()) {
+
+				//get the value of the slider
+				int high_slider_value = this_slider.getValue();
+				//get the value from the low_slider
+				int low_slider_value = Make_Projection_low_slider.getValue();		
+
+				//get the spinner values 
+				int high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+				int low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();
+
+				//print the values right now
+				IJ.log("The high slider value is " + high_slider_value);
+				IJ.log("The low slider value is " + low_slider_value);
+				IJ.log("The high spinner value is " + high_spinner_value);
+				IJ.log("The low spinner value is " + low_spinner_value);
+				
+				//if the higher slider is lower than the lower slider
+				if(high_slider_value < low_slider_value){
+					//print the log
+					IJ.log("The high slider is lower than the low slider");
+					//set the lower slider to the higher slider value
+					Make_Projection_low_slider.setValue(high_slider_value);
+					//print the log
+					IJ.log("The low slider is now set to:"+high_slider_value);
+					//print that this will activate the low slider listener
+					IJ.log("This will activate the low slider listener");
+				};
+				
+				//get the source slider numbers
+				high_slider_value = Make_Projection_high_slider.getValue();
+				low_slider_value = Make_Projection_low_slider.getValue();
+
+				//get the spinner values 
+				high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+				low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();
+
+				//set the spinner values
+				if (high_slider_value != high_spinner_value) {
+					//print hte log
+					IJ.log("The high slider value is not equal to the high spinner value");
+					//set the high spinner to the high slider value
+					Make_Projection_high_spinner.setValue(high_slider_value);
+					//print the log
+					IJ.log("The high spinner is now set to:"+high_slider_value);
+					//print that this will activate the high spinner listener
+					IJ.log("This will activate the high spinner listener");
+				}
+				if (low_slider_value != low_spinner_value) {
+					//print the log
+					IJ.log("The low slider value is not equal to the low spinner value");
+					//set the low spinner to the low slider value
+					Make_Projection_low_spinner.setValue(low_slider_value);
+					//print the log
+					IJ.log("The low spinner is now set to:"+low_slider_value);
+					//print that this will activate the low spinner listener
+					IJ.log("This will activate the low spinner listener");
+				}
+
+				//get the source slider numbers
+				high_slider_value = Make_Projection_high_slider.getValue();
+				low_slider_value = Make_Projection_low_slider.getValue();
+
+				//get the spinner values 
+				high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+				low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();
+				
+				//close the projected image
+				if(projected_image != null){
+					
+					//set to ignore flush
+					new_image_listener.setIgnoreFlush(true);
+			
+					projected_image.close();
+
+					//set to not ignore the flush
+					new_image_listener.setIgnoreFlush(false);
+				};
+				
+				//get the selected item
+				String combobox_selected_item = (String) Make_Projection_combobox.getSelectedItem();
+
+				//make the projection image
+				projected_image = ZProjector.run(current_image, combobox_selected_item, low_spinner_value, high_spinner_value);
+				//get the image id
+				projected_image_id = projected_image.getID();
+				//show the projected image
+				projected_image.show();
+				//set the location
+				projected_image.getWindow().setLocation(500,500);
+
+				//set the save path of the projection
+				set_save_path_projection();
+
+			}
+
+		};
+
+	}
+
+	//////////////////////// make an action listener for the sliders
+	public class Projection_Slider_low_listener implements ChangeListener {
+
+		public void stateChanged(ChangeEvent e) {
+			
+			//print that this is coming from the high slider
+			IJ.log("This is coming from the low slider");
+			//pring space
+			IJ.log(" ");
+
+			//get the source
+			JSlider this_slider = (JSlider) e.getSource();
+
+			if(!this_slider.getValueIsAdjusting()) {
+
+				//get the value of the slider
+				int high_slider_value = this_slider.getValue();
+				//get the value from the low_slider
+				int low_slider_value = Make_Projection_low_slider.getValue();		
+
+				//get the spinner values 
+				int high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+				int low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();
+
+				//print the values right now
+				IJ.log("The high slider value is " + high_slider_value);
+				IJ.log("The low slider value is " + low_slider_value);
+				IJ.log("The high spinner value is " + high_spinner_value);
+				IJ.log("The low spinner value is " + low_spinner_value);
+				
+				//if the higher slider is lower than the lower slider
+				if(low_slider_value > high_slider_value){
+					//print the log
+					IJ.log("The high slider is lower than the low slider");
+					//set the lower slider to the higher slider value
+					Make_Projection_high_slider.setValue(low_slider_value);
+					//print the log
+					IJ.log("The high slider is now set to:"+low_slider_value);
+					//print that this will activate the low slider listener
+					IJ.log("This will activate the high slider listener");
+				};
+				
+				//get the source slider numbers
+				high_slider_value = Make_Projection_high_slider.getValue();
+				low_slider_value = Make_Projection_low_slider.getValue();
+
+				//get the spinner values 
+				high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+				low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();
+
+				//print the values right now
+				IJ.log("The high slider value is " + high_slider_value);
+				IJ.log("The low slider value is " + low_slider_value);
+				IJ.log("The high spinner value is " + high_spinner_value);
+				IJ.log("The low spinner value is " + low_spinner_value);
+
+				//set the spinner values
+				if (high_slider_value != high_spinner_value) {
+					//print the log
+					IJ.log("The high slider value is not equal to the high spinner value");
+					//set the high spinner to the high slider value
+					Make_Projection_high_spinner.setValue(high_slider_value);
+					//print the log
+					IJ.log("The high spinner is now set to:"+high_slider_value);
+					//print that this will activate the high spinner listener
+					IJ.log("This will activate the high spinner listener");
+				}
+				if (low_slider_value != low_spinner_value) {
+					//print he log
+					IJ.log("The low slider value is not equal to the low spinner value");
+					//set the low spinner to the low slider value
+					Make_Projection_low_spinner.setValue(low_slider_value);					
+					//print the log
+					IJ.log("The low spinner is now set to:"+low_slider_value);
+					//print that this will activate the low spinner listener
+					IJ.log("This will activate the low spinner listener");
+				}
+
+				//get the source slider numbers
+				high_slider_value = Make_Projection_high_slider.getValue();
+				low_slider_value = Make_Projection_low_slider.getValue();
+
+				//get the spinner values 
+				high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+				low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();
+				
+				//close the projected image
+				if(projected_image != null){
+					
+					//set to ignore flush
+					new_image_listener.setIgnoreFlush(true);
+					
+					projected_image.close();
+
+					//set to not ignore the flush
+					new_image_listener.setIgnoreFlush(false);
+				};
+				
+				//get the selected item
+				String combobox_selected_item = (String) Make_Projection_combobox.getSelectedItem();
+
+				//make the projection image
+				projected_image = ZProjector.run(current_image, combobox_selected_item, low_spinner_value, high_spinner_value);
+				//get the image id
+				projected_image_id = projected_image.getID();
+				//show the projected image
+				projected_image.show();
+				//set the location
+				projected_image.getWindow().setLocation(500,500);
+
+				//set the save path of the projection
+				set_save_path_projection();
+
+			}
+
+		};
+
+	}
+
+	/////////////////////////make an action listener for the spinners
+	public class Projection_Spinner_low_listener implements ChangeListener {
+
+		public void stateChanged(ChangeEvent e) {
+
+			//get the source slider numbers
+			int high_slider_value = Make_Projection_high_slider.getValue();
+			int low_slider_value = Make_Projection_low_slider.getValue();
+
+			//get the spinner values 
+			int high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+			int low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();		
+
+			//print the values right now
+			IJ.log("The high slider value is " + high_slider_value);
+			IJ.log("The low slider value is " + low_slider_value);
+			IJ.log("The high spinner value is " + high_spinner_value);
+			IJ.log("The low spinner value is " + low_spinner_value);
+
+			//if the higher slider is lower than the lower slider
+			if(low_spinner_value > high_spinner_value){
+				//print the log
+				IJ.log("The lowh spinner is higher than the high spinner");
+				//set the lower spinner to the higher value
+				Make_Projection_high_spinner.setValue(low_spinner_value);
+				//print the log
+				IJ.log("The high spinner is now set to:"+low_spinner_value);
+				//print that this will activate the low spinner listener
+				IJ.log("This will activate the high spinner listener");
+			};
+
+			//get the source slider numbers
+			high_slider_value = Make_Projection_high_slider.getValue();
+			low_slider_value = Make_Projection_low_slider.getValue();
+
+			//get the spinner values 
+			high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+			low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();		
+
+			//print the values right now
+			IJ.log("The high slider value is " + high_slider_value);
+			IJ.log("The low slider value is " + low_slider_value);
+			IJ.log("The high spinner value is " + high_spinner_value);
+			IJ.log("The low spinner value is " + low_spinner_value);
+			
+			//if the high slider is different from the high spinner
+			if (high_slider_value != high_spinner_value) {
+				//print the log
+				IJ.log("The high slider value is not equal to the high spinner value");
+				//set the high slider to the high spinner value
+				Make_Projection_high_slider.setValue(high_spinner_value);
+				//print the log
+				IJ.log("The high slider is now set to:"+high_spinner_value);
+				//print that this will activate the high slider listener
+				IJ.log("This will activate the high slider listener");
+			};
+			//if the low slider is different from the low spinner
+			if (low_slider_value != low_spinner_value) {
+				//print the log
+				IJ.log("The low slider value is not equal to the low spinner value");
+				//set the low slider to the low spinner value
+				Make_Projection_low_slider.setValue(low_spinner_value);
+				//print the log
+				IJ.log("The low slider is now set to:"+low_spinner_value);
+				//print that this will activate the low slider listener
+				IJ.log("This will activate the low slider listener");
+			};
+
+			//close the projected image
+			if(projected_image != null){
+				//set to ignore flush
+				new_image_listener.setIgnoreFlush(true);
+				
+				projected_image.close();
+
+				//set to not ignore the flush
+				new_image_listener.setIgnoreFlush(false);
+			};
+
+			//get the selected item
+			String combobox_selected_item = (String) Make_Projection_combobox.getSelectedItem();
+
+			//make the projection image
+			projected_image = ZProjector.run(current_image, combobox_selected_item, low_spinner_value, high_spinner_value);
+			//get the image id
+			projected_image_id = projected_image.getID();
+			//show the projected image
+			projected_image.show();
+			//set the location
+			projected_image.getWindow().setLocation(500,500);
+
+			//set the save path of the projection
+			set_save_path_projection();
+		};
+
+	};
+
+	/////////////////////////make an action listener for the spinners
+	public class Projection_Spinner_high_listener implements ChangeListener {
+
+		public void stateChanged(ChangeEvent e) {
+
+			//get the source slider numbers
+			int high_slider_value = Make_Projection_high_slider.getValue();
+			int low_slider_value = Make_Projection_low_slider.getValue();
+
+			//get the spinner values 
+			int high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+			int low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();		
+
+			//print the values right now
+			IJ.log("The high slider value is " + high_slider_value);
+			IJ.log("The low slider value is " + low_slider_value);
+			IJ.log("The high spinner value is " + high_spinner_value);
+			IJ.log("The low spinner value is " + low_spinner_value);
+
+			//if the higher slider is lower than the lower slider
+			if(high_slider_value < low_spinner_value){
+				//print the log
+				IJ.log("The high spinner is lower than the low spinner");
+				//set the lower spinner to the higher value
+				Make_Projection_low_spinner.setValue(high_spinner_value);
+				//print the log
+				IJ.log("The low spinner is now set to:"+high_spinner_value);
+				//print that this will activate the low spinner listener
+				IJ.log("This will activate the low spinner listener");
+			};
+
+			//get the source slider numbers
+			high_slider_value = Make_Projection_high_slider.getValue();
+			low_slider_value = Make_Projection_low_slider.getValue();
+
+			//get the spinner values 
+			high_spinner_value = (Integer) Make_Projection_high_spinner.getValue();
+			low_spinner_value = (Integer) Make_Projection_low_spinner.getValue();		
+
+			//print the values right now
+			IJ.log("The high slider value is " + high_slider_value);
+			IJ.log("The low slider value is " + low_slider_value);
+			IJ.log("The high spinner value is " + high_spinner_value);
+			IJ.log("The low spinner value is " + low_spinner_value);
+			
+			//if the high slider is different from the high spinner
+			if (high_slider_value != high_spinner_value) {
+				//print the log
+				IJ.log("The high slider value is not equal to the high spinner value");
+				//set the high slider to the high spinner value
+				Make_Projection_high_slider.setValue(high_spinner_value);
+				//print the log
+				IJ.log("The high slider is now set to:"+high_spinner_value);
+				//print that this will activate the high slider listener
+				IJ.log("This will activate the high slider listener");
+			};
+			//if the low slider is different from the low spinner
+			if (low_slider_value != low_spinner_value) {
+				//print the log
+				IJ.log("The low slider value is not equal to the low spinner value");
+				//set the low slider to the low spinner value
+				Make_Projection_low_slider.setValue(low_spinner_value);
+				//print the log
+				IJ.log("The low slider is now set to:"+low_spinner_value);
+				//print that this will activate the low slider listener
+				IJ.log("This will activate the low slider listener");
+			};
+
+			//close the projected image
+			if(projected_image != null){
+				
+				//set to ignore flush
+				new_image_listener.setIgnoreFlush(true);
+				
+				projected_image.close();
+
+				//set to not ignore the flush
+				new_image_listener.setIgnoreFlush(false);
+			};
+
+			//get the selected item
+			String combobox_selected_item = (String) Make_Projection_combobox.getSelectedItem();
+
+			//make the projection image
+			projected_image = ZProjector.run(current_image, combobox_selected_item, low_spinner_value, high_spinner_value);
+			//get the image id
+			projected_image_id = projected_image.getID();
+			//show the projected image
+			projected_image.show();
+			//set the location
+			projected_image.getWindow().setLocation(500,500);
+
+			//set the save path of the projection
+			set_save_path_projection();
+			
+
+		};
+
+	};
+
+	//////////////////////////make an action listener for the projection combobox
+	public class Make_Projection_combobox_action_listener implements ActionListener {
+
+		boolean project_here = true;
+
+		public void make_projection(boolean project_here) {
+
+			this.project_here = project_here;
+
+		} 
+
+		public void actionPerformed(ActionEvent e) {
+
+			if (project_here) {
+				
+				//get the selected item
+				String selected_item = (String) Make_Projection_combobox.getSelectedItem();
+
+				//make the projection based on the selection
+				//get the low and high spinners
+				int low_spinner_value = (int) Make_Projection_low_spinner.getValue();
+				int high_spinner_value = (int) Make_Projection_high_spinner.getValue();
+
+				//close the image
+				if(projected_image != null){
+					
+					//set the ignore flush to true
+					new_image_listener.setIgnoreFlush(true);
+					
+					projected_image.close();
+					
+					//set the ignore flush to false
+					new_image_listener.setIgnoreFlush(false);
+				};
+
+				//make the projection
+				projected_image = ZProjector.run(current_image, selected_item, low_spinner_value, high_spinner_value);
+
+				//get the image id
+				projected_image_id = projected_image.getID();
+				//show the projected image
+				projected_image.show();
+
+				//log where this is coming from
+				IJ.log("ZProjection from the Make Projection Combobox");
+
+				//set the location
+				projected_image.getWindow().setLocation(500,500);
+
+				//set the save path of the projection
+				set_save_path_projection();
+
+			}
+				
+		}
+		
+	}
+
+	//////////////////////////get the save path of projection method
+	public void set_save_path_projection() {
+
+		//get the text from the path text field
+		String path_text = file_path_text_field.getText();
+
+		//get the z sections of the projection
+		int low_limit = (int) Make_Projection_low_spinner.getValue();
+		int high_limit = (int) Make_Projection_high_spinner.getValue();
+		
+		//get the file (to work easy with the parents and so on)
+		File main_to_save_file = new File(path_text);
+
+		//get the parent path from the opening image path
+		String main_to_save_parent_path = main_to_save_file.getParent();
+
+		//get the name of the file
+		String file_name = main_to_save_file.getName();
+
+		//get the name of the file without the extension
+		String file_name_no_extension = file_name.substring(0, file_name.lastIndexOf('.'));
+
+		//get the selected item
+		String combobox_selected_item = (String) Make_Projection_combobox.getSelectedItem();
+
+		//get the final path to save the image
+		String saving_image_path = main_to_save_parent_path + "/" + file_name_no_extension + "_z"+low_limit+"-z"+high_limit+"_"+combobox_selected_item+"_projection.tif";
+
+		//set the text field to the path
+		Make_projection_save_textfield.setText(saving_image_path);
+
+	}
+
+	/////////////////// error window method
+	public void make_error_window(String error_message) {
+
+		//set the size
+		error_frame.setSize(300, 100);
+		//set the location
+		error_frame.setLocation(500, 500);
+		//set the layout
+		error_frame.setLayout(new FlowLayout());
+		//make a new jlabel
+		JLabel error_label = new JLabel(error_message);
+		//add the label to the frame
+		error_frame.add(error_label);
+		//make a new jbutton
+		JButton error_button = new JButton("OK");
+		//add the button to the frame
+		error_frame.add(error_button);
+		//make a new action listener for the button
+		ActionListener error_button_listener = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				//close the frame
+				error_frame.dispose();
+			}
+		};
+		//add the action listener to the button
+		error_button.addActionListener(error_button_listener);
+		//set the frame visible
+		error_frame.setVisible(true);
+	}
+
+	///////////////////////prepare the roi array and window listener
+	public void make_sbs_prepare_rois_and_listeners(int making_sbs_image_id) {
+
+		//get the roi manager instance
+		RoiManager roi_manager = RoiManager.getInstance();
+
+		//reset the roi manager
+		roi_manager.reset();
+
+		//reset the roi list
+		roi_list = new ArrayList<Roi>();
+
+		//add a new emtpy point roi to the list
+		roi_list.add(new PointRoi());
+
+		//set the name of the first roi
+		roi_list.get(0).setName("sbs_coordinates");
+
+		//get the roi to the roi manager
+		roi_manager.addRoi(roi_list.get(0));
+
+		//get the title of the image
+		String image_title = WindowManager.getImage(making_sbs_image_id).getTitle();
+
+		//log the image title
+		IJ.log("Making sbs from image title: " + image_title);
+
+
+
+
+	}
+
+	///////////////////making a method to get the working image
+	public int Make_sbs_get_working_image() {
+
+		//get the use projection state
+		boolean use_projection_state = Make_sbs_use_projection_checkbox.isSelected();
+
+		//initiate the using image id
+		int using_image_id = 0;
+
+		//if it is selected
+		if(use_projection_state == true) {
+
+			//get the image id
+			using_image_id = projected_image_id;
+
+		} else {
+
+			//get the image id
+			using_image_id = main_image_id;
+
+		}
+
+		//return the using image id 
+		return using_image_id;
+
+	}
+	
+	//////////////////////////////////make a method to validate the roi properties
+	public boolean Make_sbs_validate_roi_properties(Roi roi_to_get_properties) {
+		
+		//returning boolean declaration
+		boolean roi_properties_valid = false;
+
+		//also, make a pass boolean array with three values set to 0
+		boolean[] pass_boolean_array = new boolean[number_of_properties_per_sbs_roi];
+
+		//if the roi has properties, then get them
+		if (roi_to_get_properties.getProperties() != null) {
+
+			//get the properties
+			String roi_properties = roi_to_get_properties.getProperties();
+
+			//now separate them into an array
+			String[] roi_properties_array = roi_properties.split("\n");
+
+			//get the length of the array
+			int roi_properties_array_length = roi_properties_array.length;		
+
+			//if the properties length is the same as the expected number of properties
+			if (roi_properties_array_length == number_of_properties_per_sbs_roi) {
+				
+				//then loop and get the properties titles by splitting the strings
+				for (int index = 0; index < roi_properties_array_length; index++) {
+
+					//get the property title based on the array
+					String property_title = number_of_properties_per_sbs_roi_string_array[index];
+					
+					//get a string for the property value
+					String property_value = "NO_VALUE";
+
+					//try to get the property value based on the title
+					try {
+						
+						//get the property
+						property_value = roi_to_get_properties.getProperty(property_title);
+
+					} catch (Exception e) {
+						//keeop the original string
+						property_value = "NO_VALUE";
+
+					}
+
+					//if the property is different from NO_VALUE, then set the pass_boolean_array to true
+					if (property_value != "NO_VALUE") {
+
+						//set the pass_boolean_array to true
+						pass_boolean_array[index] = true;
+
+					} else {
+
+						//set the pass_boolean_array to false
+						pass_boolean_array[index] = false;
+
+					}			
+
+				}
+
+				//now check if all the pass_boolean_array values are true
+				if (pass_boolean_array[0] == true && pass_boolean_array[1] == true && pass_boolean_array[2] == true) {
+
+					//if all the values are true, then set the roi_properties_valid to true
+					roi_properties_valid = true;
+
+				} else {
+
+					//if not, then set the roi_properties_valid to false
+					roi_properties_valid = false;
+
+				}
+
+
+			}
+
+
+		}
+
+		//return the roi_properties valid
+		return roi_properties_valid;
+
+	}
+
+	public String[] Make_sbs_get_current_update_roi_properties(Roi roi_go_get_properties) {
+
+		//initiate the properties array
+		String[] caught_properties_array = new String[number_of_properties_per_sbs_roi];
+
+		//loop through the number of properties
+		for (int index = 0; index < number_of_properties_per_sbs_roi; index++) {
+
+			//get the property title based on the array
+			String property_title = number_of_properties_per_sbs_roi_string_array[index];
+
+			//log which property title is being checked
+			IJ.log("Checking property title: " + property_title);
+
+			//get a string for the property value
+			String property_value = "NO_VALUE";
+
+			//try to get the property value based on the title
+			try {
+
+				//get the property
+				property_value = roi_go_get_properties.getProperty(property_title);
+
+				//log the result
+				IJ.log("Property value: " + property_value);
+
+			} catch (Exception e) {
+				//keeop the original string
+				property_value = "NO_VALUE";
+
+			}
+
+			//set the property value to the array
+			caught_properties_array[index] = property_title+"="+property_value;
+
+		}
+
+		//return the array
+		return caught_properties_array;
+
+	}
+
+	//////////////////////////// prepare the point sbs from the list
+	public void Make_sbs_prepare_point_sbs_rois_from_list() {
+
+		//get the first roi in the list
+		Roi first_roi = roi_list.get(0);
+
+		//get the points from the roi
+		float[] x_points = first_roi.getFloatPolygon().xpoints;
+		float[] y_points = first_roi.getFloatPolygon().ypoints;
+
+		//get the length of the points
+		int points_length = x_points.length;
+
+		//loop through the points
+		for (int index = 0; index < points_length; index++) {
+
+			//get the x and y points
+			float x_point = x_points[index];
+			float y_point = y_points[index];
+
+			//make a new point roi with the x and y points
+			PointRoi point_roi = new PointRoi(x_point, y_point);
+
+			//set the name of the point roi
+			point_roi.setName("sbs" + (index+1) + "_coordinate");
+
+			//log the name of the point roi
+			IJ.log("The name of the point roi is: " + point_roi.getName());
+
+			//loop throuhg the possible properties
+			for (int index2 = 0; index2 < number_of_properties_per_sbs_roi; index2++) {
+
+				//get the property title based on the array
+				String property_title = number_of_properties_per_sbs_roi_string_array[index2];
+
+				//set the property to the roi
+				point_roi.setProperty(property_title, "empty");
+
+			}
+
+			//add the point to the roi list
+			roi_list.add(point_roi);
+
+		}
+
+		//log that this will fire
+		IJ.log("Firing the update jlist method frin the new points");
+
+		//get the number of rois in the roi list
+		int roi_list_length = roi_list.size();
+
+		//update the jlist
+		Make_sbs_update_jlist();
+
+	}
+
+	//////////////////////making a method to update the JList
+	public void Make_sbs_update_jlist() {
+
+		//get the roi list length
+		int roi_list_length = roi_list.size();
+
+		//if the roi list has no active rois, it is a new list. Update the model accordingly
+		if (roi_list.size() == 0) {
+
+			//then set up a new point and add it to the roi list
+			roi_list.add(new PointRoi());
+
+			//then update the JList with a new model
+			//make a model for the jlist
+			DefaultListModel<String> new_jlist_model = new DefaultListModel<String>();
+
+			//setting the jlist with the new model
+			Make_sbs_working_rois_list.setModel(new_jlist_model);
+
+		}
+
+		//if the roi list has active rois, it is a loaded or updating current list so find out if it is valid roi structure inside
+		if (roi_list.size() > 0) {
+
+			//get the first roi and get the type and properties
+			Roi first_roi = roi_list.get(0);
+
+			//get the name of the first roi
+			String first_roi_name = first_roi.getName();
+
+			//get the type of roi
+			int first_roi_type = first_roi.getType();
+
+			//make the booleans before so i can log them
+			boolean name_correct = first_roi_name.equals("sbs_coordinates");
+
+			boolean type_correct = first_roi_type == Roi.POINT;
+
+			//if the name is not the x_y_coordinates string or the type is not a point roi
+			if (!first_roi_name.equals("sbs_coordinates") || first_roi_type != Roi.POINT) {
+
+				//get an error message string
+				String error_message = "The roi list is not valid. Please load a valid roi list";
+
+				//make an error window
+				make_error_window(error_message);
+
+				//unload the roi list
+				roi_list = new ArrayList<Roi>();
+
+				//then set up a new point and add it to the roi list
+				roi_list.add(new PointRoi());
+
+				//now get the new JList model
+				//make a model for the jlist
+				DefaultListModel<String> new_jlist_model = new DefaultListModel<String>();
+				
+				//update the JList with the new model
+				Make_sbs_working_rois_list.setModel(new_jlist_model);
+
+			} 
+			
+			//if the name is x_y_coordinates string and the type is point roi
+			if (first_roi_name.equals(x_y_coordinates_roi_string) && first_roi_type == Roi.POINT) {
+				
+				//log something to make sure it passed
+				IJ.log("passed the first roi check");
+				
+				//declare a new array list to hold the sbs coordinates names
+				ArrayList<String> sbs_coordinates_names = new ArrayList<String>();
+
+				//loop through the roi list after the first roi
+				for (int a = 1; a < roi_list.size(); a++) {
+					
+					//get the roi
+					Roi current_update_roi = roi_list.get(a);
+
+					//log which roi number it is
+					IJ.log("current roi number: " + (a+1));
+
+					//validate the properties of the roi
+					boolean roi_properties_valid = Make_sbs_validate_roi_properties(current_update_roi);
+
+					//log if the properties are valid
+					IJ.log("roi_properties_valid: " + roi_properties_valid);
+
+					//if the roi properties are valid
+					if (roi_properties_valid) {
+
+						//if it is valid, get the name without the "_coordinate" termination
+						String current_update_roi_name = current_update_roi.getName();
+
+						//get the length of the name
+						int current_update_roi_name_length = current_update_roi_name.length();
+
+						//get the name without the "_coordinate" termination
+						String current_update_roi_name_without_coordinate_termination = current_update_roi_name.substring(0, current_update_roi_name_length - 11)+" / ";
+
+						//get the propertied
+						String current_update_roi_properties = current_update_roi.getProperties();
+
+						//log the properties 
+						IJ.log("current_update_roi_properties: " + current_update_roi_properties);
+
+						//run the method to get the roi properties as string array
+						String[] current_update_roi_properties_as_strings = Make_sbs_get_current_update_roi_properties(current_update_roi);
+						
+						//loop through the array and get the name
+						for (int b = 0; b < current_update_roi_properties_as_strings.length; b++) {						
+
+							//get the current string
+							String adding_string = current_update_roi_properties_as_strings[b];
+							
+							//add the previous string with the space and the current string
+							current_update_roi_name_without_coordinate_termination = current_update_roi_name_without_coordinate_termination + "   " + adding_string;
+							
+						}
+
+						//add it to the sbs coordinates names array list
+						sbs_coordinates_names.add(current_update_roi_name_without_coordinate_termination);
+					}
+
+					//if the properties are not valid
+
+				}
+
+				//check right now the number of sbs coordinates points
+				//get the roi 0 again
+				Roi roi_0 = roi_list.get(0);
+
+				//get the number of points
+				Point[] number_of_points_array = roi_0.getContainedPoints();
+
+				//get the number of points
+				int number_of_points = number_of_points_array.length;
+
+				//get the number of sbs coordinates names
+				int number_of_sbs_coordinates_names = sbs_coordinates_names.size();
+
+				//if the number of points is higher than 0 and the number of sbs coordinates names is 0, then ask they want to prepare the point sbs rois from the list
+				if (number_of_points > 0 && number_of_sbs_coordinates_names == 0) {
+
+					//get the message
+					String message = "There are " + number_of_points + " points in the sbs_coordinates. There are no individual rois for this coordinates. Do you want to create them?";
+
+					//make a yes no dialog
+					YesNoCancelDialog yes_no_dialog = new YesNoCancelDialog(IJ.getInstance(), "Prepare point sbs rois from list?", message);
+
+					//if they say yes
+					if (yes_no_dialog.yesPressed()) {
+
+						//run the method to prepare the point sbs rois from the list
+						Make_sbs_prepare_point_sbs_rois_from_list();
+
+					}
+
+				}
+
+				//if the number of points is more than one and the number of sbs coordinates names is more than one too
+				if (number_of_points > 0 && number_of_sbs_coordinates_names > 0) {
+					
+					//make a model for the jlist
+					DefaultListModel<String> new_jlist_model = new DefaultListModel<String>();
+
+					//loop through the sbs coordinates names
+					for (int index_sbs_coordinates_name = 0; index_sbs_coordinates_name < sbs_coordinates_names.size(); index_sbs_coordinates_name++) {
+
+						//get the current sbs coordinates name
+						String current_sbs_coordinates_name = sbs_coordinates_names.get(index_sbs_coordinates_name);
+
+						//add it to the new jlist model
+						new_jlist_model.addElement(current_sbs_coordinates_name);
+
+					}
+
+					//update the JList with the new model
+					Make_sbs_working_rois_list.setModel(new_jlist_model);
+				
+				}
+
+			}
+
+		}
+
+	}
+
+
+
+
+
+	/////////////////// run method
+	public void run(String arg) {
+
+		//remove the listeners
+		remove_listeners();
+
+		//add the action listeners
+		ImagePlus.addImageListener(new_image_listener);
+
+		//set the ingore flush to false
+		new_image_listener.setIgnoreFlush(false);
+
+		//get the image list
+		String[] titles = WindowManager.getImageTitles();
+
+		//close the images
+		for (int i = 0; i < titles.length; i++) {
+			ImagePlus imp = WindowManager.getImage(titles[i]);
+			if (imp != null) {
+				imp.close();
+			}
+		}
+		
+		//set up the gui
+		make_gui();			
+
+		//setup the not active components
+		//buttons
+		Make_Projection_checkbox.setEnabled(false);
+		Save_Projection_button.setEnabled(false);
+		//checkboxes
+		Make_Projection_checkbox.setEnabled(false);
+		Classify_checkbox.setEnabled(false);
+		Make_sbs_checkbox.setEnabled(false);
+
+		//set the text on the textfield
+		file_path_text_field.setText(working_image_path);
+
+
+		/*
+				
+
+		//get the instance of the roi manager
+		RoiManager roi_manager = RoiManager.getInstance();
+
+		//get a new list with the rois
+		ArrayList<Roi> testint_roi_list = new ArrayList<Roi>();
+
+		//loop through the roi manager and get the rois into the list
+		for (int index_roi = 0; index_roi < roi_manager.getCount(); index_roi++) {
+
+			//get the roi
+			Roi current_roi = roi_manager.getRoi(index_roi);
+
+			//add it to the list
+			testint_roi_list.add(current_roi);
+
+		}
+
+		//set the 1 and 3 index rois properties
+		Roi roi_1_roi = testint_roi_list.get(1);
+
+		//true value
+		boolean true_boolean = true;
+		String z1sss = "1";
+		String z2sss = "5";
+
+
+		//set the properties of #1
+		roi_1_roi.setProperty("square", String.valueOf(true_boolean));
+		roi_1_roi.setProperty("z1", z1sss);
+		roi_1_roi.setProperty("z2", z2sss);
+
+		//set the properties of #3
+		Roi roi_3_roi = testint_roi_list.get(3);
+		roi_3_roi.setProperty("square", String.valueOf(true_boolean));
+		roi_3_roi.setProperty("z1", z1sss);
+		roi_3_roi.setProperty("z2", z2sss);
+		
+		//reset the roi manager
+		roi_manager.reset();
+
+		//add the rois to the roi manager
+		for (int index_roi = 0; index_roi < testint_roi_list.size(); index_roi++) {
+
+			//get the roi
+			Roi current_roi = testint_roi_list.get(index_roi);
+
+			//add it to the roi manager
+			roi_manager.addRoi(current_roi);
+
+		}
+
+		//get the current roi to a very new list
+		ArrayList<Roi> newest_roi_list = new ArrayList<Roi>();
+
+		//get the roi manager instance again
+		roi_manager = RoiManager.getInstance();
+
+		//loop through the roi manager and get the rois into the list
+		for (int index_roi = 0; index_roi < roi_manager.getCount(); index_roi++) {
+
+			//get the roi
+			Roi current_roi = roi_manager.getRoi(index_roi);
+
+			//add it to the list
+			newest_roi_list.add(current_roi);
+
+		}
+
+		//get the properties of the 1 and 3 rois
+		Roi roi_1_roi_new = newest_roi_list.get(1);
+		Roi roi_3_roi_new = newest_roi_list.get(3);
+
+		//get the properties of the 1 and 3 rois
+		String roi_1_roi_properties = roi_1_roi_new.getProperties();
+		String roi_3_roi_properties = roi_3_roi_new.getProperties();
+
+		//log the properties 
+		IJ.log("roi_1_roi_properties: " + roi_1_roi_properties);
+		IJ.log("roi_3_roi_properties: " + roi_3_roi_properties);
+
+		//also, get the names
+		String roi_1_roi_name = roi_1_roi_new.getName();
+		String roi_3_roi_name = roi_3_roi_new.getName();
+
+		//log the names
+		IJ.log("roi_1_roi_name: " + roi_1_roi_name);
+		IJ.log("roi_3_roi_name: " + roi_3_roi_name);
+
+
+
+		//save the roi manager
+		roi_manager.runCommand("Save", "/home/carlos/rois_to_test/testing_rois.zip");
+
+
+		""";
+		*/
+				
+				
+		
+	//end of run()
+	}
+}

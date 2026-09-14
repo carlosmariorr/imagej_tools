@@ -1,0 +1,9 @@
+For the generalRoiCreation menu:
+I'm still in the process of making the PointRois manager.
+
+For the wekaBackgroundSubstraction menu:
+I'm in the process of making the second section components for the "single" button. Adding the javax.swing elements
+
+For the projection button:
+I have finished the implementation but I havent moved the methods to the new CarltonLabTools project. Need to update from the classifier project. 
+
